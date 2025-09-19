@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type Video, type InsertVideo, users, videos } from "@shared/schema";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
-import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -141,8 +141,37 @@ export class DatabaseStorage implements IStorage {
       throw new Error("DATABASE_URL environment variable is required");
     }
     
-    const sql = neon(process.env.DATABASE_URL);
-    this.db = drizzle(sql);
+    const client = postgres(process.env.DATABASE_URL);
+    this.db = drizzle(client);
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      await this.db.execute(sql`SELECT 1`);
+      // Ensure default user exists for demo purposes
+      await this.ensureDefaultUser();
+      return true;
+    } catch (error) {
+      console.error("Database connectivity test failed:", error);
+      return false;
+    }
+  }
+
+  private async ensureDefaultUser(): Promise<void> {
+    try {
+      const existingUser = await this.getUser("default-user-id");
+      if (!existingUser) {
+        await this.db.insert(users).values({
+          id: "default-user-id",
+          username: "admin",
+          password: "admin123", // In production, this should be hashed
+          email: "admin@talentscout.com"
+        }).onConflictDoNothing();
+        console.log("✅ Default user created");
+      }
+    } catch (error) {
+      console.log("Note: Could not create default user (tables may not exist yet):", error);
+    }
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -208,6 +237,36 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use memory storage for now until database connection is fixed
-// TODO: Fix database connection and switch to: process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage()
-export const storage = new MemStorage();
+// Try to use database storage with connectivity test, fall back to memory storage if connection fails
+async function createStorage(): Promise<IStorage> {
+  if (!process.env.DATABASE_URL) {
+    console.log("⚠️  Using in-memory storage (no DATABASE_URL provided)");
+    return new MemStorage();
+  }
+
+  try {
+    const dbStorage = new DatabaseStorage();
+    const isConnected = await dbStorage.testConnection();
+    
+    if (isConnected) {
+      console.log("✅ Using PostgreSQL database storage");
+      return dbStorage;
+    } else {
+      console.log("❌ Database connection test failed, falling back to in-memory storage");
+      return new MemStorage();
+    }
+  } catch (error) {
+    console.error("❌ Database initialization failed, falling back to in-memory storage:", error);
+    return new MemStorage();
+  }
+}
+
+// Initialize storage asynchronously
+export let storage: IStorage = new MemStorage(); // Default fallback
+
+createStorage().then(storageInstance => {
+  storage = storageInstance;
+}).catch(error => {
+  console.error("Failed to initialize storage:", error);
+  storage = new MemStorage();
+});

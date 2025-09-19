@@ -52,7 +52,14 @@ export function UploadArea() {
   });
 
   const validateFile = (file: File): string | null => {
-    const allowedTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/webm'];
+    const allowedTypes = [
+      'video/mp4',
+      'video/mov', 
+      'video/quicktime', // Proper MIME type for MOV files
+      'video/avi',
+      'video/x-msvideo', // Proper MIME type for AVI files
+      'video/webm'
+    ];
     const maxSize = 500 * 1024 * 1024; // 500MB
     
     if (!allowedTypes.includes(file.type)) {

@@ -13,8 +13,15 @@ const upload = multer({
     fileSize: 500 * 1024 * 1024, // 500MB
   },
   fileFilter: (req, file, cb) => {
-    // Check file type
-    const allowedTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/webm'];
+    // Check file type - include proper MIME types for all supported formats
+    const allowedTypes = [
+      'video/mp4',
+      'video/mov', 
+      'video/quicktime', // Proper MIME type for MOV files
+      'video/avi',
+      'video/x-msvideo', // Proper MIME type for AVI files
+      'video/webm'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -27,18 +34,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test database connection
   app.get("/api/db/test", async (req, res) => {
     try {
-      // In a real implementation, you would test the actual database connection
-      // For now, we'll simulate a successful connection test
-      res.json({ 
-        success: true, 
-        message: "Database connection successful",
-        timestamp: new Date().toISOString()
-      });
+      // Test actual database connection by performing a simple query
+      console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
+      console.log("Storage type:", storage.constructor.name);
+      
+      if (process.env.DATABASE_URL) {
+        const testStats = await storage.getStorageStats();
+        res.json({ 
+          success: true, 
+          message: "Database connection successful",
+          timestamp: new Date().toISOString(),
+          testQuery: "getStorageStats executed successfully",
+          storageType: storage.constructor.name
+        });
+      } else {
+        res.json({ 
+          success: true, 
+          message: "Using in-memory storage (no DATABASE_URL provided)",
+          timestamp: new Date().toISOString(),
+          storageType: storage.constructor.name
+        });
+      }
     } catch (error) {
+      console.error("Database test error:", error);
       res.status(500).json({ 
         success: false, 
         message: "Database connection failed",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
+        storageType: storage.constructor.name
       });
     }
   });
