@@ -80,6 +80,11 @@ export class MemStorage implements IStorage {
     const video: Video = {
       ...insertVideo,
       id,
+      duration: insertVideo.duration || null,
+      quality: insertVideo.quality || "original",
+      category: insertVideo.category || "audition",
+      privacy: insertVideo.privacy || "private",
+      status: insertVideo.status || "uploading",
       createdAt: new Date(),
       updatedAt: new Date(),
     };

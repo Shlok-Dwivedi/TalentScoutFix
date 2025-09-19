@@ -34,7 +34,7 @@ export function RecentUploads() {
     );
   }
 
-  const recentVideos = videos?.slice(0, 5) || [];
+  const recentVideos = (videos as any)?.slice(0, 5) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {

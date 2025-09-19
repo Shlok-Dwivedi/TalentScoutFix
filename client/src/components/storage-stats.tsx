@@ -24,9 +24,9 @@ export function StorageStats() {
     );
   }
 
-  const usagePercentage = stats ? Math.round((stats.usedStorage / stats.maxStorage) * 100) : 0;
-  const usedGB = stats ? (stats.usedStorage / (1024 * 1024 * 1024)).toFixed(1) : "0";
-  const maxGB = stats ? (stats.maxStorage / (1024 * 1024 * 1024)).toFixed(0) : "10";
+  const usagePercentage = stats ? Math.round(((stats as any).usedStorage / (stats as any).maxStorage) * 100) : 0;
+  const usedGB = stats ? ((stats as any).usedStorage / (1024 * 1024 * 1024)).toFixed(1) : "0";
+  const maxGB = stats ? ((stats as any).maxStorage / (1024 * 1024 * 1024)).toFixed(0) : "10";
 
   return (
     <div className="bg-card rounded-lg border border-border shadow-sm">
@@ -46,13 +46,13 @@ export function StorageStats() {
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-2xl font-bold text-foreground" data-testid="text-total-files">
-                {stats?.totalFiles || 0}
+                {(stats as any)?.totalFiles || 0}
               </p>
               <p className="text-sm text-muted-foreground">Total Files</p>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <p className="text-2xl font-bold text-foreground" data-testid="text-total-videos">
-                {stats?.totalVideos || 0}
+                {(stats as any)?.totalVideos || 0}
               </p>
               <p className="text-sm text-muted-foreground">Videos</p>
             </div>
